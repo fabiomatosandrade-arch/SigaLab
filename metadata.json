@@ -1,0 +1,5 @@
+{
+  "name": "SigaLab - Gestor de Exames",
+  "description": "Aplicativo para gestão de exames laboratoriais baseado na tabela SIGTAP, com acompanhamento evolutivo e gráficos de resultados.",
+  "requestFramePermissions": []
+}
