@@ -2,7 +2,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { SigtapProcedure } from "../types";
 
-// Always use process.env.API_KEY directly when initializing as per guidelines
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export const searchSigtapExams = async (query: string): Promise<SigtapProcedure[]> => {
@@ -35,6 +34,50 @@ export const searchSigtapExams = async (query: string): Promise<SigtapProcedure[
   } catch (error) {
     console.error("Erro ao buscar no SIGTAP:", error);
     return [];
+  }
+};
+
+export const parseExamPDF = async (base64Pdf: string): Promise<any> => {
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: [
+        {
+          inlineData: {
+            mimeType: "application/pdf",
+            data: base64Pdf
+          }
+        },
+        {
+          text: `Analise este laudo laboratorial e extraia os exames encontrados. 
+          Para cada exame, retorne um objeto JSON com: 
+          examName, value (apenas número), referenceRange (texto da referência), sigtapCode (se conseguir identificar), laboratory, requestingDoctor, date (YYYY-MM-DD).
+          Retorne apenas um array JSON.`
+        }
+      ],
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              examName: { type: Type.STRING },
+              value: { type: Type.NUMBER },
+              referenceRange: { type: Type.STRING },
+              sigtapCode: { type: Type.STRING },
+              laboratory: { type: Type.STRING },
+              requestingDoctor: { type: Type.STRING },
+              date: { type: Type.STRING }
+            }
+          }
+        }
+      }
+    });
+    return JSON.parse(response.text || "[]");
+  } catch (error) {
+    console.error("Erro ao processar PDF:", error);
+    throw new Error("Não foi possível processar este arquivo PDF.");
   }
 };
 
