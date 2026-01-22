@@ -14,24 +14,46 @@ const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [isReady, setIsReady] = useState(false);
 
-  // Persistence Mock
+  // Carregamento inicial com verificações de segurança
   useEffect(() => {
-    const savedUser = localStorage.getItem('sigalab_user');
-    const savedExams = localStorage.getItem('sigalab_exams');
-    if (savedUser) setUser(JSON.parse(savedUser));
-    if (savedExams) setExams(JSON.parse(savedExams));
-    setIsReady(true);
+    try {
+      const savedUser = localStorage.getItem('sigalab_user');
+      const savedExams = localStorage.getItem('sigalab_exams');
+      
+      if (savedUser) {
+        setUser(JSON.parse(savedUser));
+      }
+      
+      if (savedExams) {
+        const parsedExams = JSON.parse(savedExams);
+        setExams(Array.isArray(parsedExams) ? parsedExams : []);
+      }
+    } catch (error) {
+      console.error("Erro ao carregar dados locais:", error);
+    } finally {
+      setIsReady(true);
+    }
   }, []);
 
+  // Persistência automática
   useEffect(() => {
-    if (user) localStorage.setItem('sigalab_user', JSON.stringify(user));
-    localStorage.setItem('sigalab_exams', JSON.stringify(exams));
-  }, [user, exams]);
+    if (isReady) {
+      if (user) {
+        localStorage.setItem('sigalab_user', JSON.stringify(user));
+      } else {
+        localStorage.removeItem('sigalab_user');
+      }
+      localStorage.setItem('sigalab_exams', JSON.stringify(exams));
+    }
+  }, [user, exams, isReady]);
 
-  const handleLogin = (u: User) => setUser(u);
+  const handleLogin = (u: User) => {
+    setUser(u);
+    setCurrentPage('dashboard');
+  };
+
   const handleLogout = () => {
     setUser(null);
-    localStorage.removeItem('sigalab_user');
     setCurrentPage('dashboard');
   };
 
@@ -42,14 +64,23 @@ const App: React.FC = () => {
       id: Math.random().toString(36).substr(2, 9),
       userId: user.id
     };
-    setExams([...exams, newExam]);
+    setExams(prev => [...prev, newExam]);
   };
 
   const deleteExam = (id: string) => {
-    setExams(exams.filter(e => e.id !== id));
+    setExams(prev => prev.filter(e => e.id !== id));
   };
 
-  if (!isReady) return <div className="min-h-screen flex items-center justify-center">Carregando...</div>;
+  if (!isReady) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-indigo-600/30 border-t-indigo-600 rounded-full animate-spin"></div>
+          <p className="text-slate-500 font-medium animate-pulse">SigaLab está iniciando...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!user) {
     return <AuthForm onLogin={handleLogin} />;

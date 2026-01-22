@@ -16,6 +16,12 @@ const ExamList: React.FC<ExamListProps> = ({ exams, onAddExam, onDeleteExam }) =
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Função auxiliar para pegar a data local no formato YYYY-MM-DD
+  const getTodayLocal = () => {
+    const d = new Date();
+    return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+  };
+
   const [filters, setFilters] = useState<Filters>({
     examName: '',
     laboratory: '',
@@ -39,7 +45,6 @@ const ExamList: React.FC<ExamListProps> = ({ exams, onAddExam, onDeleteExam }) =
 
   // Status Indicator Logic (Semaphore)
   const getStatus = (value: number, referenceRange: string) => {
-    // Regex para tentar extrair números de strings como "70 - 99" ou "Até 150"
     const numbers = referenceRange.match(/(\d+[.,]?\d*)/g);
     if (!numbers || numbers.length === 0) return 'gray';
 
@@ -60,7 +65,6 @@ const ExamList: React.FC<ExamListProps> = ({ exams, onAddExam, onDeleteExam }) =
 
     if (value < min || value > max) return 'red';
     
-    // Amarelo se estiver nos 10% de margem dos limites
     const range = max - min;
     if (range !== Infinity && range > 0) {
       const margin = range * 0.1;
@@ -93,7 +97,7 @@ const ExamList: React.FC<ExamListProps> = ({ exams, onAddExam, onDeleteExam }) =
               referenceRange: ex.referenceRange || "Não informado",
               laboratory: ex.laboratory || "Extraído do PDF",
               requestingDoctor: ex.requestingDoctor || "Não informado",
-              date: ex.date || new Date().toISOString().split('T')[0],
+              date: ex.date || getTodayLocal(),
               notes: "Importado automaticamente via PDF"
             });
           });
@@ -120,7 +124,7 @@ const ExamList: React.FC<ExamListProps> = ({ exams, onAddExam, onDeleteExam }) =
   const [newLab, setNewLab] = useState('');
   const [newDoctor, setNewDoctor] = useState('');
   const [newNotes, setNewNotes] = useState('');
-  const [newDate, setNewDate] = useState(new Date().toISOString().split('T')[0]);
+  const [newDate, setNewDate] = useState(getTodayLocal());
 
   const handleSearchSigtap = async () => {
     if (searchQuery.length < 2) return;
@@ -132,7 +136,7 @@ const ExamList: React.FC<ExamListProps> = ({ exams, onAddExam, onDeleteExam }) =
 
   const handleAddSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedSigtap || !newExamValue) return;
+    if (!selectedSigtap || !newExamValue || !newDate) return;
 
     onAddExam({
       examName: selectedSigtap.name,
@@ -153,6 +157,7 @@ const ExamList: React.FC<ExamListProps> = ({ exams, onAddExam, onDeleteExam }) =
     setNewLab('');
     setNewDoctor('');
     setNewNotes('');
+    setNewDate(getTodayLocal());
   };
 
   const clearFilters = () => {
@@ -389,8 +394,14 @@ const ExamList: React.FC<ExamListProps> = ({ exams, onAddExam, onDeleteExam }) =
                   <input type="text" value={newLab} onChange={e => setNewLab(e.target.value)} className="w-full p-4 bg-slate-50 border rounded-2xl" placeholder="Nome do Lab" />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500 ml-1">Data da Coleta</label>
-                  <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)} className="w-full p-4 bg-slate-50 border rounded-2xl" />
+                  <label className="text-xs font-bold text-slate-500 ml-1">Data da Coleta (Obrigatório)</label>
+                  <input 
+                    type="date" 
+                    required 
+                    value={newDate} 
+                    onChange={e => setNewDate(e.target.value)} 
+                    className="w-full p-4 bg-slate-50 border rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 transition" 
+                  />
                 </div>
               </div>
               <button type="submit" disabled={!selectedSigtap} className="w-full py-5 rounded-[2rem] bg-indigo-600 text-white font-black text-xl hover:bg-indigo-700 transition shadow-2xl disabled:opacity-30">Salvar no Prontuário</button>
