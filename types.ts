@@ -6,6 +6,7 @@ export interface User {
   email: string;
   username: string;
   password?: string;
+  salt?: string; // Sal para tornar o hash único por usuário
   preExistingConditions: string;
 }
 
