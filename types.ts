@@ -6,7 +6,7 @@ export interface User {
   email: string;
   username: string;
   password?: string;
-  salt?: string; // Sal para tornar o hash único por usuário
+  salt?: string;
   preExistingConditions: string;
 }
 
@@ -23,6 +23,7 @@ export interface LabExam {
   examName: string;
   sigtapCode: string;
   value: number;
+  unit?: string;
   referenceRange: string;
   laboratory: string;
   requestingDoctor: string;
