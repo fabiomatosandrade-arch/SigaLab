@@ -1,7 +1,7 @@
 
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { LabExam, Filters, SigtapProcedure } from '../types';
-import { searchSigtapExams, parseExamPDF } from '../services/geminiService';
+import { searchSigtapExams } from '../services/geminiService';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface ExamListProps {
@@ -12,8 +12,6 @@ interface ExamListProps {
 
 const ExamList: React.FC<ExamListProps> = ({ exams, onAddExam, onDeleteExam }) => {
   const [showAddForm, setShowAddForm] = useState(false);
-  const [isProcessingPdf, setIsProcessingPdf] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const getTodayLocal = () => {
     const d = new Date();
@@ -134,40 +132,6 @@ const ExamList: React.FC<ExamListProps> = ({ exams, onAddExam, onDeleteExam }) =
     setNewDate(getTodayLocal());
   };
 
-  const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setIsProcessingPdf(true);
-    try {
-      const reader = new FileReader();
-      reader.onload = async (event) => {
-        const base64 = (event.target?.result as string).split(',')[1];
-        const extractedExams = await parseExamPDF(base64);
-        if (extractedExams && extractedExams.length > 0) {
-          extractedExams.forEach((ex: any) => {
-            onAddExam({
-              examName: ex.examName || "Exame do PDF",
-              sigtapCode: ex.sigtapCode || "00000000",
-              value: ex.value || 0,
-              unit: ex.unit || "",
-              referenceRange: ex.referenceRange || "Não informado",
-              laboratory: ex.laboratory || "Extraído do PDF",
-              requestingDoctor: ex.requestingDoctor || "Não informado",
-              date: ex.date || getTodayLocal(),
-              notes: "Importado via PDF"
-            });
-          });
-        }
-      };
-      reader.readAsDataURL(file);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setIsProcessingPdf(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
-  };
-
   const filteredExams = exams.filter(exam => {
     const matchesName = exam.examName.toLowerCase().includes(filters.examName.toLowerCase());
     const matchesLab = exam.laboratory.toLowerCase().includes(filters.laboratory.toLowerCase());
@@ -196,12 +160,8 @@ const ExamList: React.FC<ExamListProps> = ({ exams, onAddExam, onDeleteExam }) =
           <p className="text-slate-500 font-medium italic">Sincronizado com tabela SIGTAP.</p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <input type="file" accept="application/pdf" className="hidden" ref={fileInputRef} onChange={handlePdfUpload} />
-          <button onClick={() => fileInputRef.current?.click()} disabled={isProcessingPdf} className="bg-slate-800 hover:bg-slate-900 text-white px-6 py-3 rounded-2xl font-bold transition flex items-center gap-2 shadow-xl disabled:opacity-50">
-            {isProcessingPdf ? "Processando..." : "Importar PDF"}
-          </button>
-          <button onClick={() => setShowAddForm(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-2xl font-bold transition shadow-xl">
-            Lançar Manual
+          <button onClick={() => setShowAddForm(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 rounded-2xl font-bold transition shadow-xl">
+            Lançar Novo Exame
           </button>
         </div>
       </div>
